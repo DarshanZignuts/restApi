@@ -1,8 +1,37 @@
 const express = require("express");
-const mongoose = require("mongoose");
 const router = express.Router();
+const mongoose = require("mongoose");
+
 const Product = require("../models/product");
 const Order = require('../models/order');
+const multer = require("multer");
+
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, './uploads/');
+    },
+    filename: function (req, file, cb) {
+        cb(null, new Date().toISOString() + file.originalname);
+    }
+})
+
+const fileFilter = (req, file, cb) => {
+    if (file.mimetype === "image/jpeg" || file.mimetype === "image/png") {
+        cb(null, true);
+    } else {
+        cb(null, false);
+    }
+}
+
+const upload = multer({
+    storage: storage,
+    limit: {
+        fileSize: 1024 * 1024 * 5
+    },
+    fileFilter: fileFilter
+});
+
+
 
 /**
  * @param {*} req
@@ -43,12 +72,13 @@ router.get("/", async function (req, res) {
  * @description postProducts for products
  * @author `DARSHAN ZignutsTechnolab`
  */
-router.post("/", async function (req, res) {
+router.post("/", upload.single("productImage"), async function (req, res) {
     try {
         const product = new Product({
             _id: new mongoose.Types.ObjectId(),
             name: req.body.name,
-            price: req.body.price
+            price: req.body.price,
+            productImage: req.file.path
         });
         const add = await Product.insertMany(product);
         if (add) {
